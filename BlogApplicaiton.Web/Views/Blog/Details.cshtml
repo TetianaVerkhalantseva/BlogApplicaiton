@@ -1,0 +1,357 @@
+@using BlogApplicaiton.Database.Entities
+@using BlogApplicaiton.Services.UserServices
+@model BlogEntity
+@inject IUserContext userContext
+
+<div class="card">
+    <div class="card-header">
+        <div class="row">
+            <div class="col-md">
+                <label class="form-label float-md-start">@Model.Title</label>
+            </div>
+            <div class="col-md">
+                @if (userContext.Id == Model.UserId)
+                {
+                    
+                        <label class="form-label float-md-end">
+                            @if (Model.IsPublic)
+                            {
+                                <input type="checkbox" checked="checked" id="change-public" />
+                            }
+                            else
+                            {
+                                <input type="checkbox" id="change-public" />
+                            }
+                            <label for="change-public">Is public</label>
+                        </label>
+                    
+                }
+                else
+                {
+                    <label class="form-label float-md-end">
+                        @if (Model.IsPublic)
+                        {
+                        <b style="color: green">Open</b>
+                        }
+                        else
+                        {
+                        <b style="color: red">Close</b>
+                        }
+                    </label>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div style="display: flex; flex-direction: column">
+            <label>Owner: @Model.User.Login</label>
+            <label>Created date: @Model.CreatedDate.ToString("dd.MM.yyyy HH:mm")</label>
+            <label>Posts: @Model.Posts.Count</label>
+        </div>
+    </div>
+</div>
+
+@if (userContext.Id == Model.UserId)
+{
+    <hr />
+    <input type="button" class="btn btn-success" value="New Post" data-bs-target="#new-post-modal" data-bs-toggle="modal" />
+}
+
+<div class="modal fade" id="new-post-modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <label class="form-label">Create new post</label>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger d-none" id="create-new-post-error">create-new-post-error</div>
+                <input type="text" class="form-control" placeholder="Post title" id="new-post-title"/>
+                <textarea class="form-control" id="new-post-content"></textarea>
+            </div>
+            <div class="modal-footer">
+                <input type="button" class="btn btn-success float-md-end" value="Create" id="create-new-post-button" />
+            </div>
+        </div>
+    </div>
+</div>
+
+@foreach (PostEntity post in Model.Posts.OrderByDescending(_ => _.PublishDate))
+{
+    <div class="modal fade" id="edit-post-modal_@post.Id">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <label class="form-label">Edit your post</label>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-danger d-none" id="edit-post-error_@post.Id">edit-post-error</div>
+                    <input type="text" class="form-control" placeholder="Post title" id="edit-post-title_@post.Id" value="@post.Title" />
+                    <textarea class="form-control" id="edit-post-content_@post.Id">@post.Content</textarea>
+                </div>
+                <div class="modal-footer">
+                    <input type="button" class="btn btn-success float-md-end" value="Save" id="save-post-button_@post.Id" />
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" style="margin-top:  15px">
+        <div class="card-header">
+            <div class="row">
+                <div class="col">
+                    <label class="form-label float-md-start">@post.Title</label>
+                </div>
+                <div class="col">
+                    <label class="form-label float-md-end">@post.PublishDate.ToString("dd.MM.yyyy HH:mm")</label>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            @post.Content
+        
+            @if (userContext.Id == Model.UserId)
+            {
+                <hr />
+            
+                <input type="button" class="btn btn-warning" value="Edit" data-bs-toggle="modal" data-bs-target="#edit-post-modal_@post.Id"/>
+                <input type="button" class="btn btn-danger" value="Remove" onclick="removePostHandler('@post.Id')" />
+            }
+        </div>
+        <div class="card-footer">
+            @foreach (CommentEntity comment in post.Comments)
+            {
+                <div class="row">
+                    <div class="col-md">
+                        @comment.Content [@comment.User.Login]
+                    </div>
+                    
+                    @if (userContext.Id == comment.UserId)
+                    {
+                        <div class="col-md-auto">
+                            <div style="display: flex; flex-direction: column">
+                                <div class="modal fade" id="edit-comment-modal_@comment.Id">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <label class="form-label">Edit comment</label>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="alert alert-danger d-none" id="edit-comment-content-error_@comment.Id"></div>
+                                                <input type="text" class="form-control" id="edit-comment-content_@comment.Id" value="@comment.Content"/>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <input type="button" class="btn btn-success" value="Save" id="save-comment-content_@comment.Id" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            
+                                <input type="button" class="btn btn-warning" value="Edit" data-bs-target="#edit-comment-modal_@comment.Id" data-bs-toggle="modal" />
+                                <input type="button" class="btn btn-danger" value="Remove" onclick="requestRemoveComment('@comment.Id')"/>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        
+            @if (Model.IsPublic || (userContext.Id == Model.UserId))
+            {
+                <div class="row">
+                    <div class="col-md-auto">
+                        <input type="text" class="form-control" placeholder="Write your mind" id="new-comment-content_@post.Id" />
+                    </div>
+                    <div class="col-md">
+                        <input type="button" class="btn btn-success" value="Add" id="add-new-comment-button_@post.Id" />
+                    </div>
+                    <div class="alert alert-danger d-none" id="add-comment-error_@post.Id"></div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@section Scripts
+{
+    <script>
+        $('#create-new-post-button').on('click', () => {
+            let data = {
+                title: $('#new-post-title').val(),
+                content: $('#new-post-content').val(),
+                blogId: '@Model.Id'
+            }
+            let jsonData = JSON.stringify(data)
+            
+            $.ajax({
+                url: '@Url.Action("Create", "Post")',
+                method: 'post',
+                data: jsonData,
+                dataType: 'json',
+                contentType: 'application/json; charset=utf-8',
+                success: (response) => {
+                    location.reload()
+                },
+                error: (response) => {
+                    let jsonResponse = JSON.parse(response.responseText)
+                    
+                    if (jsonResponse.hasOwnProperty('errorMessage')) {
+                        $('#create-new-post-error').removeClass('d-none')
+                        document.getElementById('create-new-post-error').innerHTML = jsonResponse.errorMessage
+                    }
+                }
+            });
+        })
+        
+        let addCommButtons = document.querySelectorAll("[id^='add-new-comment-button_']")
+        addCommButtons.forEach(btn => {
+            $(btn).on('click', () => {
+                           
+                let buttonIdParts = btn.id.split('_')
+                let postId = buttonIdParts[buttonIdParts.length - 1]
+
+                $('#add-comment-error_' + postId).addClass('d-none');
+                
+                let data = {
+                    content: $('#new-comment-content_' + postId).val(),
+                    postId: postId,
+                    userid: '@userContext.Id'
+                }
+                let jsonData = JSON.stringify(data);
+                
+                $.ajax({
+                    url: '@Url.Action("Create", "Comment")', 
+                    method: 'post',
+                    data: jsonData,
+                    dataType: 'json',
+                    contentType: 'application/json; charset=utf-8',
+                    success: (response) => {
+                        location.reload()
+                    },
+                    error: (response) => {
+                        let jsonResponse = JSON.parse(response.responseText)
+                        
+                        if (jsonResponse.hasOwnProperty('errorMessage')) {
+                            $('#add-comment-error_' + postId).removeClass('d-none');
+                            document.getElementById('add-comment-error_' + postId).innerHTML = jsonResponse.errorMessage
+                        }
+                    }
+                })
+            })
+        })
+
+        let savePostButtons = document.querySelectorAll("[id^='save-post-button_']")
+        savePostButtons.forEach(btn => {
+            $(btn).on('click', () => {
+                let saveButtonIdParts = btn.id.split('_')
+                let postId = saveButtonIdParts[saveButtonIdParts.length - 1]
+                
+                let data = {
+                    id: postId,
+                    title: $('#edit-post-title_' + postId).val(),
+                    content: $('#edit-post-content_' + postId).val()
+                }
+                let jsonData = JSON.stringify(data)
+                
+                $.ajax({
+                    url: '@Url.Action("Update", "Post")',
+                    method: 'post',
+                    data: jsonData,
+                    dataType: 'json',
+                    contentType: 'application/json; charset=utf-8',
+                    success: (response) => {
+                        location.reload()
+                    },
+                    error: (response) => {
+                        let jsonResponse = JSON.parse(response.responseText)
+                        
+                        if (jsonResponse.hasOwnProperty('errorMessage')) {
+                            $('#edit-post-error_' + postId).removeClass('d-none');
+                            document.getElementById('edit-post-error_' + postId).innerHTML = jsonResponse.errorMessage
+                        }
+                    }
+                })
+            })
+        })
+        
+        let saveCommentButtons = document.querySelectorAll("[id^='save-comment-content_']")
+        saveCommentButtons.forEach(btn => {
+            $(btn).on('click', () => {
+                let buttonIdParts = btn.id.split('_')
+                let commentId = buttonIdParts[buttonIdParts.length - 1]
+            
+                let data = {
+                    id: commentId,
+                    content: $('#edit-comment-content_' + commentId).val()
+                }
+                let jsonData = JSON.stringify(data)
+                
+                $.ajax({
+                    url: '@Url.Action("Update", "Comment")',
+                    method: 'post',
+                    data: jsonData,
+                    dataType: 'json',
+                    contentType: 'application/json; charset=utf-8',
+                    success: (response) => {
+                        location.reload()
+                    },
+                    error: (response) => {
+                        let jsonResponse = JSON.parse(response.responseText)
+
+                        if (jsonResponse.hasOwnProperty('errorMessage')) {
+                            $('#edit-comment-content-error_' + commentId).removeClass('d-none');
+                            document.getElementById('edit-comment-content-error_' + commentId).innerHTML = jsonResponse.errorMessage
+                        }
+                    }
+                })
+            })
+        })
+        
+        function requestRemoveComment(id) {
+            $.ajax({
+                url: '@Url.Action("Delete", "Comment")/' + id,
+                method: 'delete',
+                success: (response) => {
+                    location.reload()
+                },
+                error: (response) => {
+                    alert('Removing error. Try later')
+                }
+            })
+        }
+        
+        $('#change-public').on('click', () => {
+            let data = {
+                id: '@Model.Id',
+                isPublic: $('#change-public').is(':checked')
+            }
+            
+            let jsonData = JSON.stringify(data)
+            
+            $.ajax({
+                url: '@Url.Action("ChangePublicStatus", "Blog")',
+                method: 'post',
+                data: jsonData, 
+                dataType: 'json',
+                contentType: 'application/json; charset=utf-8',
+                success: (response) => {
+                    location.reload()
+                },
+                error: (response) => {
+                    alert('Error while change blog public status')
+                }
+            })
+        })
+        
+        function removePostHandler(id) {
+            $.ajax({
+                url: '@Url.Action("Delete", "Post")/' + id,
+                method: 'delete',
+                success: (response) => {
+                    location.reload()
+                },
+                error: (response) => {
+                    alert('Removing error. Try later')
+                }
+            })
+        }
+    </script>
+}

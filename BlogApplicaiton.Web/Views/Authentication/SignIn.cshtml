@@ -1,0 +1,60 @@
+<div class="row">
+    <div class="col-md-4"></div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <div class="row">
+                    <div class="col-md">
+                        <label class="float-md-start">Sign in your account</label>
+                    </div>
+                    <div class="col-md">
+                        <a class="float-md-end" href="@Url.Action("SignUp", "Authentication")">Create account</a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-danger d-none" id="auth-error">auth-error</div>
+                <input type="text" class="form-control" style="margin: 5px" placeholder="Login" id="login"/>
+                <input type="password" class="form-control" style="margin: 5px" placeholder="Password" id="password"/>
+            </div>
+            <div class="card-footer">
+                <input type="button" class="btn btn-success" value="Login" id="sign-in-button" />
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4"></div>
+</div>
+
+@section Scripts
+{
+    <script>
+        $('#sign-in-button').on('click', () => {
+            $('#auth-error').addClass('d-none');
+        
+            const data = {
+                login: $('#login').val(),
+                password: $('#password').val(),
+            }
+            const jsonData = JSON.stringify(data)
+            
+            $.ajax({
+                url: '@Url.Action("SignIn", "Authentication")',
+                method: 'post',
+                data: jsonData,
+                dataType: 'json',
+                contentType: 'application/json; charset=utf-8',
+                success: (response) => {
+                    location.href = "/";
+                },
+                error: (response) => {
+                    const responseJson = JSON.parse(response.responseText)
+                    
+                    if (responseJson.hasOwnProperty('errorMessage')) {
+                        $('#auth-error').removeClass('d-none');
+                        document.getElementById('auth-error').innerHTML = responseJson.errorMessage
+                    }
+                }
+            })
+        });
+    </script>
+}

@@ -1,0 +1,14 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div style="display: flex; justify-content: center; align-items: center; height: 70vh">
+    <div style="display: flex; flex-direction: column">
+        <div class="text-center">
+            <h1 class="display-4">Welcome to the world of blogging!</h1>
+            <p>Here, in our blog space, you can share your thoughts, inspire others, and find like-minded individuals!</p>
+        </div>
+
+        <a href="@Url.Action("SignUp", "Authentication")" class="btn btn-success" style="text-decoration: none">Create account</a>
+    </div>
+</div>

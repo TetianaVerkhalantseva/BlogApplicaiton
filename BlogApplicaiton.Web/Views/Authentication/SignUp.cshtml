@@ -1,0 +1,72 @@
+<div class="row">
+    <div class="col-md-4"></div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <label class="form-label">Don’t have an account? Let’s create one</label>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-danger d-none" id="auth-error">auth-error</div>
+                <input type="text" class="form-control" style="margin: 5px" placeholder="Login" id="login"/>
+                <input type="password" class="form-control" style="margin: 5px" placeholder="Password" id="password"/>
+                <input type="password" class="form-control" style="margin: 5px" placeholder="Password" id="confirm-password"/>
+                <div class="alert alert-danger d-none" id="confirm-password-error">email-error</div>
+            </div>
+            <div class="card-footer">
+                <input type="button" class="btn btn-success" value="Sign up" id="sign-up-button" />
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4"></div>
+</div>
+
+@section Scripts
+{
+    <script>
+        function checkSamePassword() {
+            if ($('#confirm-password').val() !== $('#password').val()) {
+                $('#confirm-password-error').removeClass('d-none')
+                document.getElementById('confirm-password-error').innerHTML = 'Password must be same'
+                return false;
+            }
+            else {
+                $('#confirm-password-error').addClass('d-none');
+                return true;
+            }
+        }
+        
+        $('#sign-up-button').on('click', () => {
+            $('#auth-error').addClass('d-none')
+        
+            if (checkSamePassword() !== true) {
+                return;
+            }
+            
+            const data = {
+                login: $('#login').val(),
+                password: $('#password').val()
+            }
+            const jsonData = JSON.stringify(data)
+            
+            $.ajax({
+                url: '@Url.Action("SignUp", "Authentication")',
+                method: 'post', 
+                data: jsonData,
+                dataType: 'json', 
+                contentType: 'application/json; charset=utf-8',
+                success: (response) => {
+                    location.href = "/";
+                },
+                error: (response) => {
+                    const responseJson = JSON.parse(response.responseText)
+
+                    if (responseJson.hasOwnProperty('errorMessage')) {
+                        $('#auth-error').removeClass('d-none');
+                        document.getElementById('auth-error').innerHTML = responseJson.errorMessage
+                    }
+                }
+            })
+        })
+    
+    </script>
+}

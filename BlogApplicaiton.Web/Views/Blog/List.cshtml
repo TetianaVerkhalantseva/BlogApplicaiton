@@ -1,0 +1,131 @@
+@using BlogApplicaiton.Database.Entities
+@using BlogApplicaiton.Services.UserServices
+@model List<BlogEntity>
+
+@inject IUserContext userContext
+
+@if (Model.Any())
+{
+    @foreach (BlogEntity blog in Model.OrderByDescending(_ => _.CreatedDate))
+    {
+        <div class="card" style="margin-top: 20px"> 
+            <div class="card-header" onclick="moveToBlog('@blog.Id')" style="cursor: pointer;">
+                <div class="row">
+                    <div class="col-md">
+                        <label class="float-md-start" style="cursor: pointer;">@blog.Title</label>
+                    </div>
+                    <div class="col-md">
+                        <label class="float-md-end">
+                            @if (userContext.Id == blog.UserId)
+                            {
+                                <i>My blog</i>
+                            }
+                            else
+                            {
+                                <i>@blog.User.Login</i>
+                            }
+                            
+                            @blog.CreatedDate.ToString("dd.MM.yyyy HH:mm")
+
+                            @if (blog.IsPublic)
+                            {
+                                <b style="color: green">Open</b>
+                            }
+                            else
+                            {
+                                <b style="color: red">Close</b>
+                            }
+                        </label>
+                    </div>
+                </div>
+            </div>  
+            <div class="card-body">
+                <div style="display: flex; flex-direction: column;">
+                    @foreach (PostEntity post in blog.Posts.TakeLast(5))
+                    {
+                        <label class="text-truncate">@post.Title</label>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+    
+    
+}
+else
+{
+    <div class="alert alert-danger">No one blog</div>
+}
+
+<div class="modal fade" id="create-blog-modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <label class="form-label">Create you blog</label>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md">
+                        <input type="text" class="form-control" placeholder="Title" id="new-blog-title" />
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md">
+                        <input type="checkbox" id="new-blog-is-public" />
+                        <label for="new-blog-is-public">Is public</label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <input type="button" class="btn btn-success float-end" id="create-new-blog-button" value="Create" />
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (userContext.IsAuthenticated == true)
+{
+    <input style="position: absolute;
+        left: 8px;
+        top: 80px;
+        background-color: green;
+        border-radius: 10px;
+        border: none;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 18px;
+        color: white" value="Create a blog" type="button" data-bs-toggle="modal" data-bs-target="#create-blog-modal" />
+}
+
+@section Scripts {
+    <script>
+        function moveToBlog(id) {
+            location.href = '@Url.Action("Details", "Blog")/' + id
+        }
+        
+        $('#create-new-blog-button').on('click', () => {
+            let data = {
+                title: $('#new-blog-title').val(),
+                isPublic: $('#new-blog-is-public').is(':checked'),
+                userId: '@userContext.Id'
+            }
+            let jsonData = JSON.stringify(data)
+            
+            $.ajax({
+                url: '@Url.Action("Create", "Blog")',
+                method: 'post',
+                data: jsonData,
+                dataType: 'json',
+                contentType: 'application/json; charset=utf-8',
+                success: (response) => {
+                    location.href = '@Url.Action("Details", "Blog")/' + response.id;
+                },
+                error: (response) => {
+                
+                }
+            })
+        })
+    
+    </script>
+}
